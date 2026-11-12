@@ -20,8 +20,11 @@
 	</settings>
 	<dataSource name="magelearn_customform_listing_data_source" component="Magento_Ui/js/grid/provider">
 		<settings>
-			<updateUrl path="mui/index/render"/>
-		</settings>
+                <updateUrl path="mui/index/render"/>
+                <storageConfig>
+                    <param name="indexField" xsi:type="string">id</param>
+                </storageConfig>
+            </settings>
 		<aclResource>Magelearn_Customform::Customform</aclResource>
 		<dataProvider name="magelearn_customform_listing_data_source" class="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider">
 			<settings>
@@ -135,7 +138,7 @@
 		<column name="first_name">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">first_name</label>
+				<label translate="true">First Name</label>
 				<editor>
 					<editorType>text</editorType>
 					<validation>
@@ -147,7 +150,7 @@
 		<column name="last_name">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">last_name</label>
+				<label translate="true">Last Name</label>
 				<editor>
 					<editorType>text</editorType>
 					<validation>
@@ -159,7 +162,7 @@
 		<column name="email">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">email</label>
+				<label translate="true">Email</label>
 				<editor>
 					<editorType>text</editorType>
 					<validation>
@@ -171,7 +174,7 @@
 		<column name="message">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">message</label>
+				<label translate="true">Message</label>
 				<editor>
 					<editorType>text</editorType>
 					<validation>
@@ -213,7 +216,7 @@
 			<settings>
 				<filter>dateRange</filter>
 				<dataType>date</dataType>
-				<label translate="true">created_at</label>
+				<label translate="true">Created At</label>
 				<editor>
 					<editorType>date</editorType>
 					<validation>
@@ -225,7 +228,7 @@
 		<column name="phone">
 			<settings>
 				<filter>text</filter>
-				<label translate="true">phone</label>
+				<label translate="true">Phone</label>
 				<editor>
 					<editorType>text</editorType>
 					<validation>

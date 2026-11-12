@@ -181,6 +181,39 @@ class ImageUploader
     }
 
     /**
+     * Return the image path relative to the configured media base directory.
+     */
+    public function getFileName(string $imageName): string
+    {
+        $imageName = ltrim(str_replace('\\', '/', trim($imageName)), '/');
+        $basePath = trim($this->getBasePath(), '/');
+
+        if (str_starts_with($imageName, $basePath . '/')) {
+            $imageName = substr($imageName, strlen($basePath) + 1);
+        }
+
+        return $imageName;
+    }
+
+    /**
+     * Return the public media URL for an uploaded image.
+     */
+    public function getFileUrl(string $imageName): string
+    {
+        $fileName = $this->getFileName($imageName);
+
+        if ($fileName === '') {
+            return '';
+        }
+
+        $mediaUrl = $this->storeManager->getStore()->getBaseUrl(
+            \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
+        );
+
+        return $mediaUrl . $this->getFilePath($this->getBasePath(), $fileName);
+    }
+
+    /**
      * Checking file for moving and move it
      *
      * @param string $imageName

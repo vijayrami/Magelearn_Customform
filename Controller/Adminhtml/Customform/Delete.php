@@ -1,43 +1,46 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Magelearn\Customform\Controller\Adminhtml\Customform;
 
-class Delete extends \Magelearn\Customform\Controller\Adminhtml\Customform
-{
+use Magelearn\Customform\Api\CustomformRepositoryInterface;
+use Magelearn\Customform\Controller\Adminhtml\Customform as CustomformController;
+use Magento\Backend\App\Action\Context;
+use Magento\Framework\Exception\LocalizedException;
 
-    /**
-     * Delete action
-     *
-     * @return \Magento\Framework\Controller\ResultInterface
-     */
-    public function execute()
+class Delete extends CustomformController
+{
+    public function __construct(
+        Context $context,
+        private readonly CustomformRepositoryInterface $customformRepository
+    ) {
+        parent::__construct($context);
+    }
+
+    public function execute(): \Magento\Framework\Controller\ResultInterface
     {
-        /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
         $resultRedirect = $this->resultRedirectFactory->create();
-        // check if we know what should be deleted
-        $id = $this->getRequest()->getParam('id');
-        if ($id) {
-            try {
-                // init model and delete
-                $model = $this->_objectManager->create(\Magelearn\Customform\Model\Customform::class);
-                $model->load($id);
-                $model->delete();
-                // display success message
-                $this->messageManager->addSuccessMessage(__('You deleted the Customform.'));
-                // go to grid
-                return $resultRedirect->setPath('*/*/');
-            } catch (\Exception $e) {
-                // display error message
-                $this->messageManager->addErrorMessage($e->getMessage());
-                // go back to edit form
-                return $resultRedirect->setPath('*/*/edit', ['id' => $id]);
-            }
+        $id = (int) $this->getRequest()->getParam('id');
+
+        if (!$id) {
+            $this->messageManager->addErrorMessage(__("We can't find a Customform to delete."));
+            return $resultRedirect->setPath('*/*/');
         }
-        // display error message
-        $this->messageManager->addErrorMessage(__('We can\'t find a Customform to delete.'));
-        // go to grid
-        return $resultRedirect->setPath('*/*/');
+
+        try {
+            $this->customformRepository->deleteById($id);
+            $this->messageManager->addSuccessMessage(__('You deleted the Customform.'));
+            return $resultRedirect->setPath('*/*/');
+        } catch (LocalizedException $exception) {
+            $this->messageManager->addErrorMessage($exception->getMessage());
+        } catch (\Throwable $exception) {
+            $this->messageManager->addExceptionMessage(
+                $exception,
+                __('Something went wrong while deleting the Customform.')
+            );
+        }
+
+        return $resultRedirect->setPath('*/*/edit', ['id' => $id]);
     }
 }
-

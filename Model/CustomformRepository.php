@@ -1,183 +1,131 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Magelearn\Customform\Model;
 
 use Magelearn\Customform\Api\CustomformRepositoryInterface;
+use Magelearn\Customform\Api\Data\CustomformInterface;
 use Magelearn\Customform\Api\Data\CustomformInterfaceFactory;
+use Magelearn\Customform\Api\Data\CustomformSearchResultsInterface;
 use Magelearn\Customform\Api\Data\CustomformSearchResultsInterfaceFactory;
 use Magelearn\Customform\Model\ResourceModel\Customform as ResourceCustomform;
 use Magelearn\Customform\Model\ResourceModel\Customform\CollectionFactory as CustomformCollectionFactory;
-use Magento\Framework\Api\DataObjectHelper;
 use Magento\Framework\Api\ExtensibleDataObjectConverter;
 use Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Exception\CouldNotDeleteException;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Reflection\DataObjectProcessor;
-use Magento\Store\Model\StoreManagerInterface;
 
 class CustomformRepository implements CustomformRepositoryInterface
 {
-
-    private $collectionProcessor;
-
-    protected $dataObjectHelper;
-
-    protected $extensionAttributesJoinProcessor;
-
-    protected $customformCollectionFactory;
-
-    protected $customformFactory;
-
-    protected $searchResultsFactory;
-
-    protected $dataObjectProcessor;
-
-    protected $extensibleDataObjectConverter;
-    protected $resource;
-
-    protected $dataCustomformFactory;
-
-    private $storeManager;
-
-
-    /**
-     * @param ResourceCustomform $resource
-     * @param CustomformFactory $customformFactory
-     * @param CustomformInterfaceFactory $dataCustomformFactory
-     * @param CustomformCollectionFactory $customformCollectionFactory
-     * @param CustomformSearchResultsInterfaceFactory $searchResultsFactory
-     * @param DataObjectHelper $dataObjectHelper
-     * @param DataObjectProcessor $dataObjectProcessor
-     * @param StoreManagerInterface $storeManager
-     * @param CollectionProcessorInterface $collectionProcessor
-     * @param JoinProcessorInterface $extensionAttributesJoinProcessor
-     * @param ExtensibleDataObjectConverter $extensibleDataObjectConverter
-     */
     public function __construct(
-        ResourceCustomform $resource,
-        CustomformFactory $customformFactory,
-        CustomformInterfaceFactory $dataCustomformFactory,
-        CustomformCollectionFactory $customformCollectionFactory,
-        CustomformSearchResultsInterfaceFactory $searchResultsFactory,
-        DataObjectHelper $dataObjectHelper,
-        DataObjectProcessor $dataObjectProcessor,
-        StoreManagerInterface $storeManager,
-        CollectionProcessorInterface $collectionProcessor,
-        JoinProcessorInterface $extensionAttributesJoinProcessor,
-        ExtensibleDataObjectConverter $extensibleDataObjectConverter
+        private readonly ResourceCustomform $resource,
+        private readonly CustomformFactory $customformFactory,
+        private readonly CustomformInterfaceFactory $dataCustomformFactory,
+        private readonly CustomformCollectionFactory $customformCollectionFactory,
+        private readonly CustomformSearchResultsInterfaceFactory $searchResultsFactory,
+        private readonly CollectionProcessorInterface $collectionProcessor,
+        private readonly JoinProcessorInterface $extensionAttributesJoinProcessor,
+        private readonly ExtensibleDataObjectConverter $extensibleDataObjectConverter
     ) {
-        $this->resource = $resource;
-        $this->customformFactory = $customformFactory;
-        $this->customformCollectionFactory = $customformCollectionFactory;
-        $this->searchResultsFactory = $searchResultsFactory;
-        $this->dataObjectHelper = $dataObjectHelper;
-        $this->dataCustomformFactory = $dataCustomformFactory;
-        $this->dataObjectProcessor = $dataObjectProcessor;
-        $this->storeManager = $storeManager;
-        $this->collectionProcessor = $collectionProcessor;
-        $this->extensionAttributesJoinProcessor = $extensionAttributesJoinProcessor;
-        $this->extensibleDataObjectConverter = $extensibleDataObjectConverter;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function save(
-        \Magelearn\Customform\Api\Data\CustomformInterface $customform
-    ) {
-        /* if (empty($customform->getStoreId())) {
-            $storeId = $this->storeManager->getStore()->getId();
-            $customform->setStoreId($storeId);
-        } */
-        
+    public function save(CustomformInterface $customform): CustomformInterface
+    {
         $customformData = $this->extensibleDataObjectConverter->toNestedArray(
             $customform,
             [],
-            \Magelearn\Customform\Api\Data\CustomformInterface::class
+            CustomformInterface::class
         );
-        
-        $customformModel = $this->customformFactory->create()->setData($customformData);
-        
+
+        $customformModel = $this->customformFactory->create();
+        $customformModel->setData($customformData);
+
         try {
             $this->resource->save($customformModel);
         } catch (\Exception $exception) {
-            throw new CouldNotSaveException(__(
-                'Could not save the customform: %1',
-                $exception->getMessage()
-            ));
+            throw new CouldNotSaveException(
+                __(
+                    'Could not save the customform: %1',
+                    $exception->getMessage()
+                ),
+                $exception
+            );
         }
+
         return $customformModel->getDataModel();
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function get($customformId)
+    public function get($customformId): CustomformInterface
     {
         $customform = $this->customformFactory->create();
+
         $this->resource->load($customform, $customformId);
+
         if (!$customform->getId()) {
-            throw new NoSuchEntityException(__('Customform with id "%1" does not exist.', $customformId));
+            throw new NoSuchEntityException(
+                __('Customform with id "%1" does not exist.', $customformId)
+            );
         }
+
         return $customform->getDataModel();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getList(
         \Magento\Framework\Api\SearchCriteriaInterface $criteria
-    ) {
+    ): CustomformSearchResultsInterface {
         $collection = $this->customformCollectionFactory->create();
-        
+
         $this->extensionAttributesJoinProcessor->process(
             $collection,
-            \Magelearn\Customform\Api\Data\CustomformInterface::class
+            CustomformInterface::class
         );
-        
+
         $this->collectionProcessor->process($criteria, $collection);
-        
+
         $searchResults = $this->searchResultsFactory->create();
         $searchResults->setSearchCriteria($criteria);
-        
+
         $items = [];
+
         foreach ($collection as $model) {
             $items[] = $model->getDataModel();
         }
-        
+
         $searchResults->setItems($items);
         $searchResults->setTotalCount($collection->getSize());
+
         return $searchResults;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function delete(
-        \Magelearn\Customform\Api\Data\CustomformInterface $customform
-    ) {
+    public function delete(CustomformInterface $customform): bool
+    {
         try {
             $customformModel = $this->customformFactory->create();
-            $this->resource->load($customformModel, $customform->getCustomformId());
+
+            $this->resource->load(
+                $customformModel,
+                $customform->getId()
+            );
+
             $this->resource->delete($customformModel);
         } catch (\Exception $exception) {
-            throw new CouldNotDeleteException(__(
-                'Could not delete the Customform: %1',
-                $exception->getMessage()
-            ));
+            throw new CouldNotDeleteException(
+                __(
+                    'Could not delete the customform: %1',
+                    $exception->getMessage()
+                ),
+                $exception
+            );
         }
+
         return true;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function deleteById($customformId)
+    public function deleteById($customformId): bool
     {
         return $this->delete($this->get($customformId));
     }
 }
-

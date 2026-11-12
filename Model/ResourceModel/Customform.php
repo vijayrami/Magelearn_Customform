@@ -1,18 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Magelearn\Customform\Model\ResourceModel;
 
-class Customform extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
-{
+use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
-    /**
-     * Define resource model
-     *
-     * @return void
-     */
-    protected function _construct()
+class Customform extends AbstractDb
+{
+    protected function _construct(): void
     {
-        $this->_init('magelearn_customform', 'id');   //here "magelearn_customform" is table name and "id" is the primary key of custom table
+        $this->_init('magelearn_customform', 'id');
     }
 }
-

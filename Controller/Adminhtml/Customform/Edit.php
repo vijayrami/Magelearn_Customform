@@ -1,60 +1,49 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Magelearn\Customform\Controller\Adminhtml\Customform;
 
-class Edit extends \Magelearn\Customform\Controller\Adminhtml\Customform
+use Magelearn\Customform\Api\CustomformRepositoryInterface;
+use Magelearn\Customform\Controller\Adminhtml\Customform as CustomformController;
+use Magento\Backend\App\Action\Context;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\View\Result\PageFactory;
+
+class Edit extends CustomformController
 {
-
-    protected $resultPageFactory;
-
-    /**
-     * @param \Magento\Backend\App\Action\Context $context
-     * @param \Magento\Framework\Registry $coreRegistry
-     * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
-     */
     public function __construct(
-        \Magento\Backend\App\Action\Context $context,
-        \Magento\Framework\Registry $coreRegistry,
-        \Magento\Framework\View\Result\PageFactory $resultPageFactory
+        Context $context,
+        private readonly PageFactory $resultPageFactory,
+        private readonly CustomformRepositoryInterface $customformRepository
     ) {
-        $this->resultPageFactory = $resultPageFactory;
-        parent::__construct($context, $coreRegistry);
+        parent::__construct($context);
     }
 
-    /**
-     * Edit action
-     *
-     * @return \Magento\Framework\Controller\ResultInterface
-     */
-    public function execute()
+    public function execute(): \Magento\Framework\Controller\ResultInterface
     {
-        // 1. Get ID and create model
-        $id = $this->getRequest()->getParam('id');
-        $model = $this->_objectManager->create(\Magelearn\Customform\Model\Customform::class);
-        
-        // 2. Initial checking
+        $id = (int) $this->getRequest()->getParam('id');
+
         if ($id) {
-            $model->load($id);
-            if (!$model->getId()) {
+            try {
+                $this->customformRepository->get($id);
+            } catch (NoSuchEntityException) {
                 $this->messageManager->addErrorMessage(__('This Customform no longer exists.'));
-                /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
-                $resultRedirect = $this->resultRedirectFactory->create();
-                return $resultRedirect->setPath('*/*/');
+                return $this->resultRedirectFactory->create()->setPath('*/*/');
             }
         }
-        $this->_coreRegistry->register('magelearn_customform', $model);
-        
-        // 3. Build edit form
-        /** @var \Magento\Backend\Model\View\Result\Page $resultPage */
+
         $resultPage = $this->resultPageFactory->create();
         $this->initPage($resultPage)->addBreadcrumb(
             $id ? __('Edit Customform') : __('New Customform'),
             $id ? __('Edit Customform') : __('New Customform')
         );
+
         $resultPage->getConfig()->getTitle()->prepend(__('Customforms'));
-        $resultPage->getConfig()->getTitle()->prepend($model->getId() ? __('Edit Customform %1', $model->getId()) : __('New Customform'));
+        $resultPage->getConfig()->getTitle()->prepend(
+            $id ? __('Edit Customform %1', $id) : __('New Customform')
+        );
+
         return $resultPage;
     }
 }
-

@@ -1,61 +1,70 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Magelearn\Customform\Controller\Adminhtml\Customform;
 
-class InlineEdit extends \Magento\Backend\App\Action
+use Magelearn\Customform\Model\CustomformFactory;
+use Magento\Backend\App\Action;
+use Magento\Framework\Controller\Result\JsonFactory;
+
+class InlineEdit extends Action
 {
-
-    protected $jsonFactory;
-
-    /**
-     * @param \Magento\Backend\App\Action\Context $context
-     * @param \Magento\Framework\Controller\Result\JsonFactory $jsonFactory
-     */
     public function __construct(
-        \Magento\Backend\App\Action\Context $context,
-        \Magento\Framework\Controller\Result\JsonFactory $jsonFactory
+        Action\Context $context,
+        private readonly JsonFactory $jsonFactory,
+        private readonly CustomformFactory $customformFactory
     ) {
         parent::__construct($context);
-        $this->jsonFactory = $jsonFactory;
     }
 
-    /**
-     * Inline edit action
-     *
-     * @return \Magento\Framework\Controller\ResultInterface
-     */
-    public function execute()
+    public function execute(): \Magento\Framework\Controller\ResultInterface
     {
-        /** @var \Magento\Framework\Controller\Result\Json $resultJson */
         $resultJson = $this->jsonFactory->create();
-        $error = false;
         $messages = [];
-        
-        if ($this->getRequest()->getParam('isAjax')) {
-            $postItems = $this->getRequest()->getParam('items', []);
-            if (!count($postItems)) {
-                $messages[] = __('Please correct the data sent.');
-                $error = true;
-            } else {
-                foreach (array_keys($postItems) as $modelid) {
-                    /** @var \Magelearn\Customform\Model\Customform $model */
-                    $model = $this->_objectManager->create(\Magelearn\Customform\Model\Customform::class)->load($modelid);
-                    try {
-                        $model->setData(array_merge($model->getData(), $postItems[$modelid]));
-                        $model->save();
-                    } catch (\Exception $e) {
-                        $messages[] = "[Customform ID: {$modelid}]  {$e->getMessage()}";
-                        $error = true;
-                    }
+        $error = false;
+
+        if (!$this->getRequest()->getParam('isAjax')) {
+            return $resultJson->setData([
+                'messages' => [__('Invalid request.')],
+                'error' => true,
+            ]);
+        }
+
+        $postItems = $this->getRequest()->getParam('items', []);
+
+        if (!$postItems) {
+            return $resultJson->setData([
+                'messages' => [__('Please correct the data sent.')],
+                'error' => true,
+            ]);
+        }
+
+        foreach ($postItems as $modelId => $itemData) {
+            try {
+                $model = $this->customformFactory->create()->load((int) $modelId);
+
+                if (!$model->getId()) {
+                    throw new \Magento\Framework\Exception\LocalizedException(
+                        __('Customform with ID %1 does not exist.', $modelId)
+                    );
                 }
+
+                $model->addData($itemData);
+                $model->save();
+            } catch (\Throwable $exception) {
+                $messages[] = __(
+                    '[Customform ID: %1] %2',
+                    $modelId,
+                    $exception->getMessage()
+                );
+                $error = true;
             }
         }
-        
+
         return $resultJson->setData([
             'messages' => $messages,
-            'error' => $error
+            'error' => $error,
         ]);
     }
 }
-

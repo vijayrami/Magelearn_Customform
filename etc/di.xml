@@ -3,19 +3,6 @@
 	<preference for="Magelearn\Customform\Api\CustomformRepositoryInterface" type="Magelearn\Customform\Model\CustomformRepository"/>
 	<preference for="Magelearn\Customform\Api\Data\CustomformInterface" type="Magelearn\Customform\Model\Data\Customform"/>
 	<preference for="Magelearn\Customform\Api\Data\CustomformSearchResultsInterface" type="Magento\Framework\Api\SearchResults"/>
-	<virtualType name="Magelearn\Customform\Model\ResourceModel\Customform\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
-		<arguments>
-			<argument name="mainTable" xsi:type="string">magelearn_customform</argument>
-			<argument name="resourceModel" xsi:type="string">Magelearn\Customform\Model\ResourceModel\Customform\Collection</argument>
-		</arguments>
-	</virtualType>
-	<type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
-		<arguments>
-			<argument name="collections" xsi:type="array">
-				<item name="magelearn_customform_listing_data_source" xsi:type="string">Magelearn\Customform\Model\ResourceModel\Customform\Grid\Collection</item>
-			</argument>
-		</arguments>
-	</type>
 	<virtualType name="Magelearn\Customform\CustomformImageUpload" type="Magelearn\Customform\Model\ImageUploader">
 	    <arguments>
 	            <argument name="baseTmpPath" xsi:type="string">magelearn/customform/tmp</argument>
